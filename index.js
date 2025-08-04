@@ -57,6 +57,27 @@ app.use(requestLogger);
 // Health check endpoint (no auth required)
 app.get('/health', async (req, res) => {
   try {
+    // Check if required environment variables are set
+    const requiredEnvVars = {
+      SHOPIFY_STORE_DOMAIN: process.env.SHOPIFY_STORE_DOMAIN,
+      SHOPIFY_ACCESS_TOKEN: process.env.SHOPIFY_ACCESS_TOKEN,
+      MCP_API_KEY: process.env.MCP_API_KEY
+    };
+    
+    const missingVars = Object.entries(requiredEnvVars)
+      .filter(([key, value]) => !value)
+      .map(([key]) => key);
+    
+    if (missingVars.length > 0) {
+      return res.status(503).json({
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        error: 'Missing environment variables',
+        missing_variables: missingVars,
+        message: 'Please configure environment variables in Vercel dashboard'
+      });
+    }
+    
     const connectionTest = await shopify.testConnection();
     
     res.json({
@@ -64,14 +85,16 @@ app.get('/health', async (req, res) => {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       shopify_connection: connectionTest.success,
-      environment: process.env.NODE_ENV || 'development'
+      environment: process.env.NODE_ENV || 'development',
+      store_domain: process.env.SHOPIFY_STORE_DOMAIN
     });
   } catch (error) {
     logger.error('Health check failed:', error);
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
-      error: error.message
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -153,7 +176,7 @@ process.on('uncaughtException', (error) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   logger.info(`Kraftokase MCP server started on port ${PORT}`, {
     port: PORT,
     environment: process.env.NODE_ENV || 'development',
@@ -163,11 +186,22 @@ app.listen(PORT, () => {
   console.log(`
 🚀 Kraftokase MCP Server Started!
 📍 Port: ${PORT}
-🏪 Store: ${process.env.SHOPIFY_STORE_DOMAIN}
+🏪 Store: ${process.env.SHOPIFY_STORE_DOMAIN || 'Not configured'}
 🔐 API Key: ${process.env.MCP_API_KEY ? 'Configured' : 'Missing'}
 📊 Health Check: http://localhost:${PORT}/health
 📚 API Docs: http://localhost:${PORT}/
   `);
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  logger.error('Server error:', error);
+  if (error.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use`);
+  } else {
+    console.error('Server failed to start:', error.message);
+  }
+  process.exit(1);
 });
 
 module.exports = app; 
