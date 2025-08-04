@@ -1,0 +1,107 @@
+# Kraftokase MCP API Tests
+# Replace YOUR_API_KEY with your actual API key
+# Replace YOUR_BASE_URL with your deployed URL (e.g., https://your-app.vercel.app)
+
+@baseUrl = http://localhost:3000
+@apiKey = YOUR_API_KEY
+
+### Health Check (No auth required)
+GET {{baseUrl}}/health
+
+### API Documentation
+GET {{baseUrl}}/
+
+### Get All Products
+GET {{baseUrl}}/products
+X-API-Key: {{apiKey}}
+
+### Get Products with Limit
+GET {{baseUrl}}/products?limit=10
+X-API-Key: {{apiKey}}
+
+### Get Single Product (replace PRODUCT_ID)
+GET {{baseUrl}}/products/PRODUCT_ID
+X-API-Key: {{apiKey}}
+
+### Update Product Tags
+PUT {{baseUrl}}/products/PRODUCT_ID/tags
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "tags": ["MagSafe", "iPhone 15", "Premium"]
+}
+
+### Get Product Metafields
+GET {{baseUrl}}/products/PRODUCT_ID/metafields
+X-API-Key: {{apiKey}}
+
+### Update Product Metafield
+POST {{baseUrl}}/products/PRODUCT_ID/metafields
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "namespace": "custom",
+  "key": "featured",
+  "value": "true",
+  "type": "boolean"
+}
+
+### Get All Collections
+GET {{baseUrl}}/collections
+X-API-Key: {{apiKey}}
+
+### Create Smart Collection
+POST {{baseUrl}}/collections
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "title": "Premium Leather Cases",
+  "rule_keywords": ["leather", "premium"],
+  "description": "High-quality leather phone cases"
+}
+
+### Get Single Collection
+GET {{baseUrl}}/collections/COLLECTION_ID
+X-API-Key: {{apiKey}}
+
+### Bulk Update Products by Keyword
+POST {{baseUrl}}/sync/products/metafield?keyword=iPhone
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "namespace": "custom",
+  "key": "device_type",
+  "value": "iPhone",
+  "type": "single_line_text_field"
+}
+
+### Test with curl commands (copy and paste in terminal):
+
+# Health Check
+curl -X GET "{{baseUrl}}/health"
+
+# Get Products
+curl -X GET "{{baseUrl}}/products" \
+  -H "X-API-Key: {{apiKey}}"
+
+# Update Product Tags
+curl -X PUT "{{baseUrl}}/products/PRODUCT_ID/tags" \
+  -H "X-API-Key: {{apiKey}}" \
+  -H "Content-Type: application/json" \
+  -d '{"tags": ["MagSafe", "iPhone 15"]}'
+
+# Create Collection
+curl -X POST "{{baseUrl}}/collections" \
+  -H "X-API-Key: {{apiKey}}" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "MagSafe Cases", "rule_keywords": ["MagSafe"]}'
+
+# Bulk Metafield Update
+curl -X POST "{{baseUrl}}/sync/products/metafield?keyword=leather" \
+  -H "X-API-Key: {{apiKey}}" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "custom", "key": "material", "value": "leather"}' 
