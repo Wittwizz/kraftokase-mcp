@@ -175,15 +175,16 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-// Start server
-const server = app.listen(PORT, () => {
-  logger.info(`Kraftokase MCP server started on port ${PORT}`, {
-    port: PORT,
-    environment: process.env.NODE_ENV || 'development',
-    shopify_store: process.env.SHOPIFY_STORE_DOMAIN
-  });
-  
-  console.log(`
+// Start server only if not in serverless environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  const server = app.listen(PORT, () => {
+    logger.info(`Kraftokase MCP server started on port ${PORT}`, {
+      port: PORT,
+      environment: process.env.NODE_ENV || 'development',
+      shopify_store: process.env.SHOPIFY_STORE_DOMAIN
+    });
+    
+    console.log(`
 🚀 Kraftokase MCP Server Started!
 📍 Port: ${PORT}
 🏪 Store: ${process.env.SHOPIFY_STORE_DOMAIN || 'Not configured'}
@@ -191,17 +192,20 @@ const server = app.listen(PORT, () => {
 📊 Health Check: http://localhost:${PORT}/health
 📚 API Docs: http://localhost:${PORT}/
   `);
-});
+  });
 
-// Handle server errors
-server.on('error', (error) => {
-  logger.error('Server error:', error);
-  if (error.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use`);
-  } else {
-    console.error('Server failed to start:', error.message);
-  }
-  process.exit(1);
-});
+  // Handle server errors
+  server.on('error', (error) => {
+    logger.error('Server error:', error);
+    if (error.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use`);
+    } else {
+      console.error('Server failed to start:', error.message);
+    }
+    process.exit(1);
+  });
+} else {
+  console.log('🚀 Kraftokase MCP running in serverless mode');
+}
 
 module.exports = app; 
